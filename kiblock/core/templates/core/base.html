@@ -1,0 +1,484 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}KiBlock{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        ::selection {
+            background: #dc3545;
+            color: white;
+        }
+        
+        ::-moz-selection {
+            background: #dc3545;
+            color: white;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            color: #333;
+        }
+        
+        .navbar {
+            background: #fff;
+            padding: 0.5rem 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e0e0e0;
+            min-height: 70px;
+            overflow: visible;
+        }
+        
+        .navbar h1 {
+            color: #333;
+            font-size: 1.5rem;
+            margin: 0;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            overflow: visible;
+        }
+        
+        .navbar h1 a {
+            color: #333;
+            text-decoration: none;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            transition: all 0.2s;
+        }
+        
+        .navbar h1 a img {
+            height: 70px;
+            max-height: 70px;
+            transition: filter 0.2s;
+        }
+        
+        .navbar h1 a:hover {
+            color: #555;
+        }
+        
+        .navbar h1 a:hover img {
+            filter: brightness(0) invert(1);
+        }
+        
+        .navbar .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: #666;
+        }
+        
+        .navbar a {
+            color: #333;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        
+        .navbar a:hover {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .container {
+            flex: 1;
+            max-width: 1200px;
+            width: 100%;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+        
+        .messages {
+            list-style: none;
+            margin-bottom: 1rem;
+        }
+        
+        .messages li {
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 8px;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .messages .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .messages .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .messages .warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .messages .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        .messages li {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .messages li.fade-out {
+            animation: fadeOut 0.5s ease-out forwards;
+        }
+        
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+                transform: translateY(-20px);
+                max-height: 0;
+                margin-bottom: 0;
+                padding: 0;
+            }
+        }
+        
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+            .navbar {
+                flex-direction: column;
+                gap: 1rem;
+                padding: 1rem;
+            }
+            
+            .navbar .user-info {
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 0.5rem;
+            }
+            
+            .container {
+                padding: 0 1rem;
+                margin: 1rem auto;
+            }
+        }
+        
+        /* Loading indicator */
+        .loading {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(139, 158, 255, 0.3);
+            border-top: 2px solid #8b9eff;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Utility classes */
+        .text-center {
+            text-align: center;
+        }
+        
+        .text-muted {
+            color: #6c757d;
+        }
+        
+        .text-success {
+            color: #28a745;
+        }
+        
+        .text-error {
+            color: #dc3545;
+        }
+        
+        .text-warning {
+            color: #ffc107;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    {% if user %}
+    <nav class="navbar">
+        <h1><a href="{% url 'block_list' %}"><img src="{% static 'core/images/logo.svg' %}" alt="Logo"></a></h1>
+        <div class="user-info">
+            <a href="{% url 'cart' %}"><i class="fas fa-shopping-cart"></i> Cart</a>
+            <a href="{% url 'copied_history' %}"><i class="fas fa-history"></i> Copied History</a>
+            <a href="#" onclick="openUploadModal(); return false;"><i class="fas fa-file-upload"></i> Upload Project</a>
+            <a href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        </div>
+    </nav>
+    {% endif %}
+    
+    <div class="container">
+        {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+            <li class="{{ message.tags }}">{{ message }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        
+        {% block content %}{% endblock %}
+    </div>
+    
+    {% if user %}
+    <!-- Upload Project Modal -->
+    <div class="modal" id="upload-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; justify-content: center; align-items: center;">
+        <div class="modal-content" style="background: white; padding: 2rem; border-radius: 8px; max-width: 500px; width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h3 style="margin: 0; color: #333;">Upload Your KiCad Project</h3>
+                <button class="modal-close" onclick="closeUploadModal()" style="background: none; border: none; font-size: 1.5rem; color: #999; cursor: pointer; padding: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">×</button>
+            </div>
+            <div class="modal-body" style="margin-bottom: 1.5rem;">
+                <div class="file-upload-area" id="file-upload-area" style="border: 2px dashed #ddd; border-radius: 4px; padding: 2rem; text-align: center; cursor: pointer; transition: border-color 0.2s;">
+                    <div class="file-upload-icon" style="font-size: 3rem; color: #999; margin-bottom: 1rem;">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </div>
+                    <p>Click to select file or drag and drop</p>
+                    <p style="color: #999; font-size: 0.9rem;">KiCad files (.kicad_pcb, .kicad_pro, .kicad_sch) or archives (.zip, .rar, .7z)</p>
+                    <input type="file" id="project-file-input" accept=".kicad_pcb,.kicad_pro,.kicad_sch,.zip,.rar,.7z,.tar,.gz" style="display: none;">
+                </div>
+                <div class="file-info" id="file-info" style="margin-top: 1rem; padding: 0.75rem; background: #f8f9fa; border-radius: 4px; display: none;">
+                    <i class="fas fa-file"></i>
+                    <strong id="file-name"></strong>
+                    <span id="file-size" style="color: #666; margin-left: 0.5rem;"></span>
+                </div>
+                <div class="upload-result" id="upload-result" style="margin-top: 1rem; padding: 1rem; border-radius: 4px; display: none;"></div>
+            </div>
+            <div class="modal-footer" style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button onclick="closeUploadModal()" style="padding: 0.75rem 1.5rem; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; font-weight: 500; background: #6c757d; color: white;">Cancel</button>
+                <button id="btn-upload" onclick="uploadFile()" disabled style="padding: 0.75rem 1.5rem; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; font-weight: 500; background: #dc3545; color: white; opacity: 0.5;">Upload</button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% block footer %}
+    {% if user %}
+    <footer style="text-align: center; padding: 1.5rem; color: #666; font-size: 0.85rem; border-top: 1px solid #e0e0e0; margin-top: auto; background: #fff;">
+        <p>KiBlock - KiCad Block Management System</p>
+        <p style="margin-top: 0.5rem;">Logged in as <strong style="color: #333;">{{ user }}</strong> | Cost Limit: <strong style="color: #dc3545;">{{ user.cost_limit }} zł</strong></p>
+    </footer>
+    {% endif %}
+    {% endblock %}
+    
+    <script>
+        // Auto-dismiss messages after 4 seconds
+        document.addEventListener('DOMContentLoaded', function() {
+            const messages = document.querySelectorAll('.messages li');
+            messages.forEach(function(message) {
+                setTimeout(function() {
+                    message.classList.add('fade-out');
+                    setTimeout(function() {
+                        message.remove();
+                    }, 500); // Wait for animation to complete
+                }, 4000); // Show for 4 seconds
+            });
+        });
+
+        // Upload Project Modal Functions
+        let selectedFile = null;
+
+        function openUploadModal() {
+            document.getElementById('upload-modal').style.display = 'flex';
+            resetUploadModal();
+        }
+
+        function closeUploadModal() {
+            document.getElementById('upload-modal').style.display = 'none';
+            resetUploadModal();
+        }
+
+        function resetUploadModal() {
+            selectedFile = null;
+            document.getElementById('project-file-input').value = '';
+            document.getElementById('file-info').style.display = 'none';
+            const uploadResult = document.getElementById('upload-result');
+            uploadResult.style.display = 'none';
+            uploadResult.className = 'upload-result';
+            uploadResult.innerHTML = '';
+            const btnUpload = document.getElementById('btn-upload');
+            btnUpload.disabled = true;
+            btnUpload.style.opacity = '0.5';
+            btnUpload.style.cursor = 'not-allowed';
+        }
+
+        // File upload area
+        const fileUploadArea = document.getElementById('file-upload-area');
+        const fileInput = document.getElementById('project-file-input');
+
+        if (fileUploadArea && fileInput) {
+            fileUploadArea.addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                handleFileSelect(e.target.files[0]);
+            });
+
+            // Drag and drop
+            fileUploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                fileUploadArea.style.borderColor = '#dc3545';
+                fileUploadArea.style.background = '#ffe6e6';
+            });
+
+            fileUploadArea.addEventListener('dragleave', () => {
+                fileUploadArea.style.borderColor = '#ddd';
+                fileUploadArea.style.background = 'transparent';
+            });
+
+            fileUploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                fileUploadArea.style.borderColor = '#ddd';
+                fileUploadArea.style.background = 'transparent';
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleFileSelect(files[0]);
+                }
+            });
+        }
+
+        function handleFileSelect(file) {
+            if (!file) return;
+            
+            const allowedExtensions = ['.kicad_pcb', '.kicad_pro', '.kicad_sch', '.zip', '.rar', '.7z', '.tar', '.gz'];
+            const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+            
+            if (!allowedExtensions.includes(fileExtension)) {
+                alert('Please select a valid KiCad or archive file');
+                return;
+            }
+            
+            selectedFile = file;
+            
+            // Display file info
+            document.getElementById('file-name').textContent = file.name;
+            document.getElementById('file-size').textContent = `(${(file.size / 1024).toFixed(2)} KB)`;
+            document.getElementById('file-info').style.display = 'block';
+            const btnUpload = document.getElementById('btn-upload');
+            btnUpload.disabled = false;
+            btnUpload.style.opacity = '1';
+            btnUpload.style.cursor = 'pointer';
+        }
+
+        async function uploadFile() {
+            if (!selectedFile) return;
+            
+            const btnUpload = document.getElementById('btn-upload');
+            const uploadResult = document.getElementById('upload-result');
+            
+            btnUpload.disabled = true;
+            btnUpload.textContent = 'Uploading...';
+            
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            
+            try {
+                const response = await fetch('/blocks/upload-project/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                    },
+                    body: formData,
+                });
+                
+                const data = await response.json();
+                
+                uploadResult.style.display = 'block';
+                
+                if (data.success) {
+                    uploadResult.style.background = '#d4edda';
+                    uploadResult.style.border = '1px solid #c3e6cb';
+                    uploadResult.style.color = '#155724';
+                    uploadResult.innerHTML = `<strong>Success!</strong> ${data.message}`;
+                    
+                    // Close modal after 2 seconds
+                    setTimeout(() => {
+                        closeUploadModal();
+                    }, 2000);
+                } else {
+                    uploadResult.style.background = '#f8d7da';
+                    uploadResult.style.border = '1px solid #f5c6cb';
+                    uploadResult.style.color = '#721c24';
+                    uploadResult.innerHTML = `<strong>Error!</strong> ${data.message}`;
+                }
+            } catch (error) {
+                uploadResult.style.display = 'block';
+                uploadResult.style.background = '#f8d7da';
+                uploadResult.style.border = '1px solid #f5c6cb';
+                uploadResult.style.color = '#721c24';
+                uploadResult.innerHTML = `<strong>Error!</strong> Failed to upload file`;
+                console.error('Upload error:', error);
+            } finally {
+                btnUpload.disabled = false;
+                btnUpload.textContent = 'Upload';
+            }
+        }
+
+        // Helper function to get CSRF token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // Close modal when clicking outside
+        const uploadModal = document.getElementById('upload-modal');
+        if (uploadModal) {
+            uploadModal.addEventListener('click', (e) => {
+                if (e.target.id === 'upload-modal') {
+                    closeUploadModal();
+                }
+            });
+        }
+    </script>
+</body>
+</html>

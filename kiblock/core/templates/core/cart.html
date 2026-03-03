@@ -1,0 +1,543 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Cart - KiBlock{% endblock %}
+
+{% block extra_css %}
+<style>
+    .cart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding: 1.5rem;
+        background: #fff;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .cart-header h2 {
+        color: #333;
+        margin: 0;
+    }
+    
+    .cost-summary {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        font-size: 1.2rem;
+    }
+    
+    .cost-total {
+        padding: 0.5rem 1rem;
+        background: #f5f5f5;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+        color: #333;
+    }
+    
+    .cost-total.over-limit {
+        background: #fff3cd;
+        border-color: #ffc107;
+        color: #856404;
+    }
+    
+    .cart-items {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .cart-item {
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 1.5rem;
+        display: grid;
+        grid-template-columns: 1fr auto auto auto auto;
+        gap: 1.5rem;
+        align-items: center;
+        transition: box-shadow 0.2s;
+    }
+    
+    .cart-item:hover {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .item-info h3 {
+        color: #333;
+        margin: 0 0 0.5rem 0;
+        font-size: 1.2rem;
+    }
+    
+    .item-info p {
+        color: #666;
+        margin: 0;
+        font-size: 0.95rem;
+    }
+    
+    .type-badge {
+        color: #666;
+        font-size: 0.75rem;
+        font-style: italic;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-top: 0.25rem;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+    
+    .item-quantity {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .qty-btn {
+        background: #dc3545;
+        border: none;
+        color: white;
+        width: 32px;
+        height: 32px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 1.2rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: opacity 0.2s;
+    }
+    
+    .qty-btn:hover {
+        opacity: 0.9;
+    }
+    
+    .qty-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    
+    .qty-display {
+        color: #333;
+        font-size: 1.1rem;
+        font-weight: 600;
+        padding: 0.5rem 1rem;
+        background: #f5f5f5;
+        border-radius: 4px;
+        min-width: 60px;
+        text-align: center;
+    }
+    
+    .item-cost {
+        color: black;
+        font-size: 1.2rem;
+        font-weight: 600;
+        min-width: 100px;
+        text-align: right;
+    }
+    
+    .item-total {
+        color: black;
+        font-size: 1.3rem;
+        font-weight: 700;
+        min-width: 120px;
+        text-align: right;
+    }
+    
+    .empty-cart {
+        text-align: center;
+        padding: 4rem 2rem;
+        background: #fff;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+    }
+    
+    .empty-cart h3 {
+        color: #333;
+        margin-bottom: 1rem;
+        font-size: 1.5rem;
+    }
+    
+    .empty-cart p {
+        color: #666;
+        margin-bottom: 2rem;
+    }
+    
+    .btn-browse {
+        display: inline-block;
+        padding: 0.75rem 2rem;
+        background: #dc3545;
+        color: white;
+        text-decoration: none;
+        border-radius: 4px;
+        font-weight: 600;
+        transition: opacity 0.2s;
+    }
+    
+    .btn-browse:hover {
+        opacity: 0.9;
+    }
+    
+    .limit-warning {
+        margin-top: 1rem;
+        padding: 1rem;
+        background: #fff3cd;
+        border: 1px solid #ffc107;
+        border-radius: 4px;
+        color: #856404;
+        text-align: center;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+    
+    .current-warning {
+        margin-top: 1rem;
+        padding: 1rem;
+        background: #f8d7da;
+        border: 1px solid #dc3545;
+        border-radius: 4px;
+        color: #721c24;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+    
+    .power-summary {
+        margin-top: 1rem;
+        padding: 1.5rem;
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .power-summary h3 {
+        margin: 0 0 1rem 0;
+        color: #333;
+        font-size: 1.1rem;
+    }
+    
+    .power-stats {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+    
+    .power-stat {
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 4px;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .power-stat .label {
+        color: #666;
+        font-size: 0.9rem;
+    }
+    
+    .power-stat .value {
+        color: #333;
+        font-size: 1.3rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .power-stat.insufficient {
+        background: #fff3cd;
+        border: 1px solid #ffc107;
+    }
+    
+    .power-stat.danger {
+        background: #f8d7da;
+        border: 1px solid #dc3545;
+    }
+    
+    .btn-remove {
+        background: #dc3545;
+        border: none;
+        color: white;
+        padding: 0.5rem 0.75rem;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: opacity 0.2s;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .btn-remove:hover {
+        opacity: 0.9;
+    }
+    
+    .toast {
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        background: #fff;
+        color: #28a745;
+        padding: 1rem 1.5rem;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        z-index: 1000;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cart-header">
+    <h2>Your Cart</h2>
+    <div class="cost-summary">
+        <span class="cost-total {% if over_limit %}over-limit{% endif %}">
+            {{ cart_total }} / {{ cost_limit }} zł
+        </span>
+    </div>
+</div>
+
+{% if cart_items %}
+<div class="cart-items">
+    {% for item in cart_items %}
+    <div class="cart-item" data-item-id="{{ item.id }}">
+        <div class="item-info">
+            <h3>{{ item.block.name }}</h3>
+            <div class="type-badge">{{ item.block.get_block_type_display }}</div>
+            <p>
+                {% if item.block.voltage > 0 or item.block.current > 0 %}
+                    {{ item.block.voltage }}V, {{ item.block.current }}A {% if item.block.block_type == 'battery' %}supply{% else %}consumption{% endif %}.
+                {% endif %}
+                {{ item.block.description|default:"No description" }}
+            </p>
+        </div>
+        <div class="item-quantity">
+            <button class="qty-btn" onclick="decreaseQuantity({{ item.id }})" {% if item.quantity <= 1 %}disabled{% endif %}>−</button>
+            <span class="qty-display" id="qty-{{ item.id }}">{{ item.quantity }}</span>
+            <button class="qty-btn" onclick="increaseQuantity({{ item.id }})">+</button>
+        </div>
+        <div class="item-cost">
+            {{ item.block.cost }} zł each
+        </div>
+        <div class="item-total" id="total-{{ item.id }}">
+            Total: {{ item.get_total_cost }} zł
+        </div>
+        <button class="btn-remove" onclick="removeItem({{ item.id }}, '{{ item.block.name }}')" title="Remove item">
+            <i class="fas fa-trash"></i>
+        </button>
+    </div>
+    {% endfor %}
+</div>
+
+{% if over_limit %}
+<div class="limit-warning">
+    <i class="fas fa-exclamation-triangle"></i>
+    Warning: Your cart total exceeds your cost limit of {{ cost_limit }} zł!
+</div>
+{% endif %}
+
+{% if warnings %}
+{% for warning in warnings %}
+<div class="current-warning">
+    <i class="fas fa-exclamation-triangle"></i>
+    <span>{{ warning }}</span>
+</div>
+{% endfor %}
+{% endif %}
+
+{% if cart_items and cart_count > 0 %}
+<div class="power-summary">
+    <h3><i class="fas fa-bolt"></i> Power Requirements Summary{% if has_regulator %} <span style="color: #28a745; font-size: 0.9rem;">✓ Regulator Present</span>{% endif %}</h3>
+    <div class="power-stats">
+        <div class="power-stat {% if component_voltage and battery_voltage and battery_voltage < component_voltage %}danger{% elif component_voltage and not battery_voltage %}danger{% endif %}">
+            <div class="label">Voltage</div>
+            <div class="value">
+                <i class="fas fa-bolt"></i>
+                {% if battery_voltage %}
+                    <span>{{ battery_voltage }}V (supply)</span>
+                {% else %}
+                    <span>No battery</span>
+                {% endif %}
+                {% if component_voltage %}
+                    <span style="margin-left: 0.5rem; color: #666; font-size: 0.9rem;"> → {{ component_voltage }}V (required)</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="power-stat {% if total_current_consumption > total_current_supply %}danger{% elif total_current_consumption > 0 and total_current_supply == 0 %}danger{% endif %}">
+            <div class="label">Current</div>
+            <div class="value">
+                <i class="fas fa-plug"></i>
+                {% if total_current_supply > 0 %}
+                    <span>{{ total_current_supply|floatformat:2 }}A (supply)</span>
+                {% else %}
+                    <span>No supply</span>
+                {% endif %}
+                {% if total_current_consumption > 0 %}
+                    <span style="margin-left: 0.5rem; color: #666; font-size: 0.9rem;"> → {{ total_current_consumption|floatformat:2 }}A (required)</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% else %}
+<div class="empty-cart">
+    <h3>Your cart is empty</h3>
+    <p>Start browsing blocks and add some to your cart!</p>
+    <a href="{% url 'block_list' %}" class="btn-browse">Browse Blocks</a>
+</div>
+{% endif %}
+
+<script>
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    function showToast(message) {
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.remove();
+        }, 3000);
+    }
+    
+    function updateCartDisplay(cartTotal, overLimit) {
+        const costTotalElem = document.querySelector('.cost-total');
+        costTotalElem.textContent = `${cartTotal} / {{ cost_limit }} zł`;
+        
+        if (overLimit) {
+            costTotalElem.classList.add('over-limit');
+            if (!document.querySelector('.limit-warning')) {
+                const warning = document.createElement('div');
+                warning.className = 'limit-warning';
+                warning.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Warning: Your cart total exceeds your cost limit of {{ cost_limit }} zł!';
+                document.querySelector('.cart-items').after(warning);
+            }
+        } else {
+            costTotalElem.classList.remove('over-limit');
+            const warning = document.querySelector('.limit-warning');
+            if (warning) warning.remove();
+        }
+    }
+    
+    async function increaseQuantity(itemId) {
+        try {
+            const response = await fetch(`/cart/increase/${itemId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json',
+                },
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                document.getElementById(`qty-${itemId}`).textContent = data.quantity;
+                document.getElementById(`total-${itemId}`).textContent = `Total: ${data.item_total} zł`;
+                updateCartDisplay(data.cart_total, data.over_limit);
+                
+                // Enable decrease button if quantity > 1
+                const cartItem = document.querySelector(`[data-item-id="${itemId}"]`);
+                const decreaseBtn = cartItem.querySelector('.qty-btn:first-child');
+                if (data.quantity > 1) {
+                    decreaseBtn.disabled = false;
+                }
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showToast('Failed to update quantity');
+        }
+    }
+    
+    async function decreaseQuantity(itemId) {
+        try {
+            const response = await fetch(`/cart/decrease/${itemId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json',
+                },
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                document.getElementById(`qty-${itemId}`).textContent = data.quantity;
+                document.getElementById(`total-${itemId}`).textContent = `Total: ${data.item_total} zł`;
+                updateCartDisplay(data.cart_total, data.over_limit);
+                
+                // Disable decrease button if quantity is 1
+                if (data.quantity === 1) {
+                    const cartItem = document.querySelector(`[data-item-id="${itemId}"]`);
+                    const decreaseBtn = cartItem.querySelector('.qty-btn:first-child');
+                    decreaseBtn.disabled = true;
+                }
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showToast('Failed to update quantity');
+        }
+    }
+    
+    async function removeItem(itemId, blockName) {
+        if (!confirm(`Remove ${blockName} from cart?`)) {
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/cart/remove/${itemId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json',
+                },
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showToast(data.message);
+                
+                // Remove the cart item from DOM
+                const cartItem = document.querySelector(`[data-item-id="${itemId}"]`);
+                cartItem.remove();
+                
+                // Check if cart is now empty
+                if (data.cart_count === 0) {
+                    location.reload(); // Reload to show empty cart message
+                } else {
+                    updateCartDisplay(data.cart_total, data.over_limit);
+                }
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showToast('Failed to remove item');
+        }
+    }
+</script>
+{% endblock %}

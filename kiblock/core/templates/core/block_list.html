@@ -1,0 +1,504 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Blocks - KiBlock{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+    .blocks-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding: 1.5rem;
+        background: #fff;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .blocks-header h2 {
+        color: #333;
+        margin: 0;
+        font-weight: 600;
+    }
+    
+    .cart-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        color: #666;
+        font-size: 1rem;
+    }
+    
+    .cart-total {
+        padding: 0.5rem 1rem;
+        background: #f0f0f0;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+    }
+    
+    .cart-total.over-limit {
+        background: #fff3cd;
+        border-color: #ffc107;
+        color: #856404;
+    }
+    
+    .search-bar {
+        margin-bottom: 2rem;
+        background: #fff;
+        padding: 1.5rem;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .search-input-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+    
+    .search-input-wrapper i.fa-search {
+        position: absolute;
+        left: 1rem;
+        color: #999;
+        font-size: 1rem;
+    }
+    
+    .search-input-wrapper input {
+        width: 100%;
+        padding: 0.75rem 3rem 0.75rem 3rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 1rem;
+        transition: border-color 0.2s;
+    }
+    
+    .search-input-wrapper input:focus {
+        outline: none;
+        border-color: #dc3545;
+    }
+    
+    .clear-search {
+        position: absolute;
+        right: 1rem;
+        color: #999;
+        cursor: pointer;
+        padding: 0.25rem;
+        transition: color 0.2s;
+    }
+    
+    .clear-search:hover {
+        color: #333;
+    }
+    
+    .search-results-info {
+        margin: 0.75rem 0 0 0;
+        color: #666;
+        font-size: 0.9rem;
+    }
+    
+    .blocks-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .block-card {
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 1.5rem;
+        transition: box-shadow 0.2s;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .block-card:hover {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .block-type-badge {
+        color: #666;
+        font-size: 0.75rem;
+        font-style: italic;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-top: 0.25rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .block-name {
+        color: #333;
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin: 0;
+    }
+    
+    .block-description {
+        color: #666;
+        font-size: 0.95rem;
+        line-height: 1.5;
+        flex: 1;
+        min-height: 3rem;
+    }
+    
+    .block-cost {
+        color: #dc3545;
+        font-size: 1.1rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .block-type-badge {
+        display: inline;
+        color: #666;
+        font-size: 0.85rem;
+        font-weight: normal;
+        font-style: italic;
+    }
+    
+    .block-actions {
+        display: flex;
+        gap: 0.75rem;
+    }
+    
+    .btn {
+        flex: 1;
+        padding: 0.75rem;
+        border: none;
+        border-radius: 4px;
+        font-size: 0.95rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: opacity 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+    
+    .btn:hover {
+        opacity: 0.9;
+    }
+    
+    .btn:active {
+        opacity: 1;
+    }
+    
+    .btn-copy {
+        background: #17a2b8;
+        color: white;
+    }
+    
+    .btn-copy:hover {
+        background: #138496;
+    }
+    
+    .btn-cart {
+        background: #28a745;
+        color: white;
+    }
+    
+    .btn-cart:hover {
+        background: #218838;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        background: #fff;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+    }
+    
+    .empty-state h3 {
+        color: #333;
+        margin-bottom: 1rem;
+    }
+    
+    .empty-state p {
+        color: #666;
+    }
+    
+    .btn-browse {
+        display: inline-block;
+        padding: 0.75rem 1.5rem;
+        background: #dc3545;
+        color: white;
+        text-decoration: none;
+        border-radius: 4px;
+        font-weight: 600;
+        transition: opacity 0.2s;
+        margin-top: 1rem;
+    }
+    
+    .btn-browse:hover {
+        opacity: 0.9;
+    }
+    
+    .toast {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        padding: 1rem 1.5rem;
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        color: #28a745;
+        font-weight: 500;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        z-index: 1000;
+    }
+
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="blocks-header">
+    <h2>Available Blocks</h2>
+    <div class="cart-info">
+        <span>Cart: <span id="cart-count">{{ cart_count }}</span> items</span>
+        <span class="cart-total {% if cart_total > cost_limit %}over-limit{% endif %}" id="cart-total-display">
+            <span id="cart-total">{{ cart_total }}</span> / {{ cost_limit }}
+        </span>
+    </div>
+</div>
+
+<div class="search-bar">
+    <div class="search-input-wrapper">
+        <i class="fas fa-search"></i>
+        <input type="text" name="search" id="search-input" placeholder="Search blocks by name or description..." autocomplete="off">
+        <a href="#" class="clear-search" id="clear-search" title="Clear search" style="display: none;">
+            <i class="fas fa-times"></i>
+        </a>
+    </div>
+    <p class="search-results-info" id="search-results-info" style="display: none;"></p>
+</div>
+
+{% if blocks %}
+<div class="blocks-grid" id="blocks-grid">
+    {% for block in blocks %}
+    <div class="block-card">
+        <h3 class="block-name">{{ block.name }}</h3>
+        <div class="block-type-badge">{{ block.get_block_type_display }}</div>
+        <p class="block-description">
+            {% if block.voltage > 0 or block.current > 0 %}
+                {{ block.voltage }}V, {{ block.current }}A {% if block.block_type == 'battery' %}supply{% else %}consumption{% endif %}.
+            {% endif %}
+            {{ block.description|default:"No description provided." }}
+        </p>
+        <div class="block-cost">
+            {{ block.cost }} zł
+        </div>
+        <div class="block-actions">
+            <button class="btn btn-copy" onclick="copyBlock({{ block.id }}, '{{ block.name|escapejs }}')">
+                <i class="fas fa-copy"></i>
+                <span>Copy</span>
+            </button>
+            <button class="btn btn-cart" onclick="addToCart({{ block.id }}, '{{ block.name|escapejs }}')">
+                <i class="fas fa-cart-plus"></i>
+                <span>Add to Cart</span>
+            </button>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+<div class="empty-state" id="empty-state" style="display: none;">
+    <h3>No blocks found</h3>
+    <p>No blocks match your search. Try a different search term.</p>
+</div>
+{% else %}
+<div class="blocks-grid" id="blocks-grid" style="display: none;"></div>
+<div class="empty-state" id="empty-state">
+    <h3>No blocks available yet</h3>
+    <p>Check back later or contact an admin to add some blocks!</p>
+</div>
+{% endif %}
+
+<script>
+// Real-time search with AJAX and debouncing
+let searchTimeout;
+const searchInput = document.getElementById('search-input');
+const clearSearchBtn = document.getElementById('clear-search');
+const searchResultsInfo = document.getElementById('search-results-info');
+const blocksGrid = document.getElementById('blocks-grid');
+const emptyState = document.getElementById('empty-state');
+
+function renderBlocks(blocks) {
+    if (blocks.length === 0) {
+        // Show empty state
+        blocksGrid.style.display = 'none';
+        emptyState.style.display = 'block';
+        emptyState.innerHTML = `
+            <h3>No blocks found</h3>
+            <p>No blocks match your search. Try a different search term.</p>
+        `;
+    } else {
+        // Hide empty state and show blocks
+        emptyState.style.display = 'none';
+        blocksGrid.style.display = 'grid';
+        blocksGrid.innerHTML = blocks.map(block => {
+            const voltageCurrentText = (block.voltage > 0 || block.current > 0) 
+                ? `${block.voltage}V, ${block.current}A ${block.block_type === 'battery' ? 'supply' : 'consumption'}.` 
+                : '';
+            
+            return `
+                <div class="block-card">
+                    <h3 class="block-name">${escapeHtml(block.name)}</h3>
+                    <div class="block-type-badge">${escapeHtml(block.block_type_display)}</div>
+                    <p class="block-description">
+                        ${voltageCurrentText}
+                        ${escapeHtml(block.description)}
+                    </p>
+                    <div class="block-cost">
+                        ${block.cost} zł
+                    </div>
+                    <div class="block-actions">
+                        <button class="btn btn-copy" onclick="copyBlock(${block.id}, '${escapeHtml(block.name).replace(/'/g, "\\'")}')">
+                            <i class="fas fa-copy"></i>
+                            <span>Copy</span>
+                        </button>
+                        <button class="btn btn-cart" onclick="addToCart(${block.id}, '${escapeHtml(block.name).replace(/'/g, "\\'")}')">
+                            <i class="fas fa-cart-plus"></i>
+                            <span>Add to Cart</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+async function performSearch(query) {
+    try {
+        const response = await fetch(`/blocks/search/?search=${encodeURIComponent(query)}`);
+        const data = await response.json();
+        
+        renderBlocks(data.blocks);
+        
+        // Update search results info
+        if (query) {
+            searchResultsInfo.textContent = `Found ${data.count} block${data.count !== 1 ? 's' : ''} matching "${query}"`;
+            searchResultsInfo.style.display = 'block';
+            clearSearchBtn.style.display = 'block';
+        } else {
+            searchResultsInfo.style.display = 'none';
+            clearSearchBtn.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Search error:', error);
+    }
+}
+
+if (searchInput) {
+    searchInput.addEventListener('input', function() {
+        const query = this.value.trim();
+        
+        // Clear the previous timeout
+        clearTimeout(searchTimeout);
+        
+        // Set a new timeout to search after 300ms of no typing
+        searchTimeout = setTimeout(function() {
+            performSearch(query);
+        }, 300);
+    });
+}
+
+if (clearSearchBtn) {
+    clearSearchBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        searchInput.value = '';
+        searchResultsInfo.style.display = 'none';
+        clearSearchBtn.style.display = 'none';
+        performSearch('');
+    });
+}
+
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.textContent = message;
+    
+    if (type === 'error') {
+        toast.style.color = '#ff6b6b';
+        toast.style.borderColor = 'rgba(220, 53, 69, 0.5)';
+    }
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.animation = 'fadeOut 0.3s ease-out forwards';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+function updateCartDisplay(data) {
+    document.getElementById('cart-count').textContent = data.cart_count;
+    document.getElementById('cart-total').textContent = data.cart_total;
+    
+    const cartTotalDisplay = document.getElementById('cart-total-display');
+    if (data.over_limit) {
+        cartTotalDisplay.classList.add('over-limit');
+    } else {
+        cartTotalDisplay.classList.remove('over-limit');
+    }
+}
+
+async function copyBlock(blockId, blockName) {
+    try {
+        const response = await fetch(`/blocks/copy/${blockId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json',
+            },
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Copy to clipboard
+            await navigator.clipboard.writeText(data.kicad_code);
+            showToast(data.message);
+        }
+    } catch (error) {
+        showToast('Failed to copy block', 'error');
+        console.error('Copy error:', error);
+    }
+}
+
+async function addToCart(blockId, blockName) {
+    try {
+        const response = await fetch(`/blocks/add-to-cart/${blockId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json',
+            },
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            updateCartDisplay(data);
+            showToast(data.message);
+        }
+    } catch (error) {
+        showToast('Failed to add to cart', 'error');
+        console.error('Cart error:', error);
+    }
+}
+</script>
+{% endblock %}

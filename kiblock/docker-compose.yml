@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: kiblock_web
+    ports:
+      - "${PORT:-9025}:9025"
+    volumes:
+      # Persist database
+      - ./data:/app/data
+    environment:
+      - DEBUG=${DEBUG:-True}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-localhost,127.0.0.1}
+      - PORT=${PORT:-9025}
+    restart: unless-stopped
+    command: python manage.py runserver 0.0.0.0:9025
+
+volumes:
+  data:
