@@ -41,10 +41,12 @@ class ProjectUploadInline(admin.TabularInline):
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
     list_display = ['full_name', 'cost_limit', 'cart_total', 'cart_count', 'created_at']
+    list_editable = ['cost_limit']
     search_fields = ['first_name', 'last_name']
     list_filter = ['created_at', 'cost_limit']
     ordering = ['last_name', 'first_name']
     readonly_fields = ['created_at', 'cart_total', 'cart_count', 'copied_count']
+    actions = ['set_cost_limit_50', 'set_cost_limit_100', 'set_cost_limit_150', 'set_cost_limit_200']
     
     fieldsets = (
         ('User Information', {
@@ -77,6 +79,26 @@ class UserAdmin(admin.ModelAdmin):
     def copied_count(self, obj):
         return obj.copied_blocks.count()
     copied_count.short_description = 'Blocks Copied'
+    
+    def set_cost_limit_50(self, request, queryset):
+        updated = queryset.update(cost_limit=50.0)
+        self.message_user(request, f'{updated} user(s) cost limit set to 50 zł')
+    set_cost_limit_50.short_description = 'Set cost limit to 50 zł'
+    
+    def set_cost_limit_100(self, request, queryset):
+        updated = queryset.update(cost_limit=100.0)
+        self.message_user(request, f'{updated} user(s) cost limit set to 100 zł')
+    set_cost_limit_100.short_description = 'Set cost limit to 100 zł'
+    
+    def set_cost_limit_150(self, request, queryset):
+        updated = queryset.update(cost_limit=150.0)
+        self.message_user(request, f'{updated} user(s) cost limit set to 150 zł')
+    set_cost_limit_150.short_description = 'Set cost limit to 150 zł'
+    
+    def set_cost_limit_200(self, request, queryset):
+        updated = queryset.update(cost_limit=200.0)
+        self.message_user(request, f'{updated} user(s) cost limit set to 200 zł')
+    set_cost_limit_200.short_description = 'Set cost limit to 200 zł'
 
 
 @admin.register(Block)
