@@ -1,11 +1,36 @@
 from django.db import models
+from django.core.exceptions import ValidationError
+
+
+class Settings(models.Model):
+    """Global application settings - singleton model"""
+    global_cost_limit = models.FloatField(default=100.0, help_text="Global cost limit for all users in zł")
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Settings"
+        verbose_name_plural = "Settings"
+
+    def save(self, *args, **kwargs):
+        # Ensure only one Settings object exists
+        if not self.pk and Settings.objects.exists():
+            raise ValidationError('There can only be one Settings instance')
+        return super().save(*args, **kwargs)
+
+    @classmethod
+    def get_settings(cls):
+        """Get or create the singleton settings instance"""
+        settings, _ = cls.objects.get_or_create(pk=1)
+        return settings
+
+    def __str__(self):
+        return f"Global Settings (Limit: {self.global_cost_limit} zł)"
 
 
 class User(models.Model):
     """Custom user model for KiBlock (no password authentication)"""
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
-    cost_limit = models.FloatField(default=100.0)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -24,6 +49,7 @@ class Block(models.Model):
     
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True, null=True)
+    image = models.ImageField(upload_to='blocks/', blank=True, null=True, help_text="Optional block image (will be displayed as a square)")
     kicad_code = models.TextField(help_text="Full KiCad snippet code")
     cost = models.FloatField()
     block_type = models.CharField(max_length=20, choices=BLOCK_TYPE_CHOICES, default='component')

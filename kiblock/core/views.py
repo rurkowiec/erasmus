@@ -7,7 +7,7 @@ from django.db.models import Sum, Q
 from functools import wraps
 import hashlib
 import os
-from .models import User, Block, CopiedBlock, CartItem, ProjectUpload
+from .models import User, Block, CopiedBlock, CartItem, ProjectUpload, Settings
 
 
 def require_user_login(view_func):
@@ -140,12 +140,13 @@ def block_list(request):
     cart_total = sum(item.get_total_cost() for item in cart_items)
     cart_count = cart_items.count()
     
+    settings = Settings.get_settings()
     context = {
         'user': user,
         'blocks': blocks,
         'cart_total': cart_total,
         'cart_count': cart_count,
-        'cost_limit': user.cost_limit,
+        'cost_limit': settings.global_cost_limit,
     }
     return render(request, 'core/block_list.html', context)
 
@@ -176,6 +177,7 @@ def search_blocks(request):
         'block_type_display': block.get_block_type_display(),
         'voltage': float(block.voltage) if block.voltage else 0,
         'current': float(block.current) if block.current else 0,
+        'image_url': block.image.url if block.image else None,
     } for block in blocks]
     
     return JsonResponse({
@@ -235,14 +237,15 @@ def add_to_cart(request, block_id):
     cart_count = cart_items.count()
     
     # Check if over limit
-    over_limit = cart_total > user.cost_limit
+    settings = Settings.get_settings()
+    over_limit = cart_total > settings.global_cost_limit
     
     return JsonResponse({
         'success': True,
         'message': message,
         'cart_total': cart_total,
         'cart_count': cart_count,
-        'cost_limit': user.cost_limit,
+        'cost_limit': settings.global_cost_limit,
         'over_limit': over_limit,
     })
 
@@ -315,13 +318,14 @@ def cart_view(request):
     elif has_components and component_voltage and not has_battery:
         warnings.append(f"Components require {component_voltage}V but there's no battery in the cart!")
     
+    settings = Settings.get_settings()
     context = {
         'user': user,
         'cart_items': cart_items,
         'cart_total': cart_total,
         'cart_count': cart_count,
-        'cost_limit': user.cost_limit,
-        'over_limit': cart_total > user.cost_limit,
+        'cost_limit': settings.global_cost_limit,
+        'over_limit': cart_total > settings.global_cost_limit,
         'warnings': warnings,
         'total_current_consumption': total_current_consumption,
         'total_current_supply': total_current_supply,
@@ -347,7 +351,8 @@ def increase_cart_item(request, item_id):
     # Recalculate totals
     cart_items = CartItem.objects.filter(user=user)
     cart_total = sum(item.get_total_cost() for item in cart_items)
-    over_limit = cart_total > user.cost_limit
+    settings = Settings.get_settings()
+    over_limit = cart_total > settings.global_cost_limit
     
     return JsonResponse({
         'success': True,
@@ -375,7 +380,8 @@ def decrease_cart_item(request, item_id):
     # Recalculate totals
     cart_items = CartItem.objects.filter(user=user)
     cart_total = sum(item.get_total_cost() for item in cart_items)
-    over_limit = cart_total > user.cost_limit
+    settings = Settings.get_settings()
+    over_limit = cart_total > settings.global_cost_limit
     
     return JsonResponse({
         'success': True,
@@ -401,7 +407,8 @@ def remove_cart_item(request, item_id):
     # Recalculate totals
     cart_items = CartItem.objects.filter(user=user)
     cart_total = sum(item.get_total_cost() for item in cart_items)
-    over_limit = cart_total > user.cost_limit
+    settings = Settings.get_settings()
+    over_limit = cart_total > settings.global_cost_limit
     
     return JsonResponse({
         'success': True,
@@ -420,9 +427,11 @@ def copied_history_view(request):
     user = get_logged_in_user(request)
     copied_blocks = CopiedBlock.objects.filter(user=user).select_related('block').order_by('-copied_at')
     
+    settings = Settings.get_settings()
     context = {
         'user': user,
         'copied_blocks': copied_blocks,
+        'cost_limit': settings.global_cost_limit,
     }
     return render(request, 'core/copied_history.html', context)
 

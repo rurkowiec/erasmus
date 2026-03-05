@@ -1,5 +1,7 @@
 from django.contrib import admin
-from .models import User, Block, CopiedBlock, CartItem, ProjectUpload
+from django.utils.html import format_html
+from django.utils.safestring import mark_safe
+from .models import User, Block, CopiedBlock, CartItem, ProjectUpload, Settings
 
 
 class CartItemInline(admin.TabularInline):
@@ -40,17 +42,15 @@ class ProjectUploadInline(admin.TabularInline):
 
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
-    list_display = ['full_name', 'cost_limit', 'cart_total', 'cart_count', 'created_at']
-    list_editable = ['cost_limit']
+    list_display = ['full_name', 'cart_total', 'cart_count', 'created_at']
     search_fields = ['first_name', 'last_name']
-    list_filter = ['created_at', 'cost_limit']
+    list_filter = ['created_at']
     ordering = ['last_name', 'first_name']
     readonly_fields = ['created_at', 'cart_total', 'cart_count', 'copied_count']
-    actions = ['set_cost_limit_50', 'set_cost_limit_100', 'set_cost_limit_150', 'set_cost_limit_200']
     
     fieldsets = (
         ('User Information', {
-            'fields': ('first_name', 'last_name', 'cost_limit')
+            'fields': ('first_name', 'last_name')
         }),
         ('Statistics', {
             'fields': ('cart_total', 'cart_count', 'copied_count', 'created_at'),
@@ -67,7 +67,8 @@ class UserAdmin(admin.ModelAdmin):
     
     def cart_total(self, obj):
         total = sum(item.get_total_cost() for item in obj.cart_items.all())
-        if total > obj.cost_limit:
+        settings = Settings.get_settings()
+        if total > settings.global_cost_limit:
             return f"{total} credits (OVER LIMIT)"
         return f"{total} credits"
     cart_total.short_description = 'Cart Total'
@@ -79,39 +80,47 @@ class UserAdmin(admin.ModelAdmin):
     def copied_count(self, obj):
         return obj.copied_blocks.count()
     copied_count.short_description = 'Blocks Copied'
+
+
+@admin.register(Settings)
+class SettingsAdmin(admin.ModelAdmin):
+    list_display = ['global_cost_limit', 'updated_at']
+    fieldsets = (
+        ('Global Cost Limit', {
+            'fields': ('global_cost_limit',),
+            'description': 'This cost limit applies to all users. Any new account created will have this limit.'
+        }),
+        ('System Info', {
+            'fields': ('updated_at',),
+            'classes': ('collapse',)
+        }),
+    )
+    readonly_fields = ['updated_at']
     
-    def set_cost_limit_50(self, request, queryset):
-        updated = queryset.update(cost_limit=50.0)
-        self.message_user(request, f'{updated} user(s) cost limit set to 50 zł')
-    set_cost_limit_50.short_description = 'Set cost limit to 50 zł'
+    def has_add_permission(self, request):
+        # Only allow one Settings instance
+        return not Settings.objects.exists()
     
-    def set_cost_limit_100(self, request, queryset):
-        updated = queryset.update(cost_limit=100.0)
-        self.message_user(request, f'{updated} user(s) cost limit set to 100 zł')
-    set_cost_limit_100.short_description = 'Set cost limit to 100 zł'
-    
-    def set_cost_limit_150(self, request, queryset):
-        updated = queryset.update(cost_limit=150.0)
-        self.message_user(request, f'{updated} user(s) cost limit set to 150 zł')
-    set_cost_limit_150.short_description = 'Set cost limit to 150 zł'
-    
-    def set_cost_limit_200(self, request, queryset):
-        updated = queryset.update(cost_limit=200.0)
-        self.message_user(request, f'{updated} user(s) cost limit set to 200 zł')
-    set_cost_limit_200.short_description = 'Set cost limit to 200 zł'
+    def has_delete_permission(self, request, obj=None):
+        # Never allow deleting the settings
+        return False
 
 
 @admin.register(Block)
 class BlockAdmin(admin.ModelAdmin):
-    list_display = ['name', 'block_type', 'voltage', 'current', 'cost', 'times_copied', 'times_in_cart', 'created_at']
+    list_display = ['name', 'block_type', 'voltage', 'current', 'cost', 'has_image', 'times_copied', 'times_in_cart', 'created_at']
     search_fields = ['name', 'description', 'kicad_code']
     list_filter = ['created_at', 'cost', 'block_type']
     ordering = ['name']
-    readonly_fields = ['created_at', 'times_copied', 'times_in_cart']
+    readonly_fields = ['created_at', 'times_copied', 'times_in_cart', 'image_preview']
     
     fieldsets = (
         ('Block Information', {
             'fields': ('name', 'description', 'block_type', 'cost')
+        }),
+        ('Image', {
+            'fields': ('image', 'image_preview'),
+            'description': 'Optional block image (will be displayed as a square on the site)'
         }),
         ('Electrical Properties', {
             'fields': ('voltage', 'current'),
@@ -126,6 +135,20 @@ class BlockAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+    
+    def has_image(self, obj):
+        return bool(obj.image)
+    has_image.short_description = 'Image'
+    has_image.boolean = True
+    
+    def image_preview(self, obj):
+        if obj.image:
+            return format_html('<img id="preview-image" src="{}" style="max-width: 200px; max-height: 200px; border: 1px solid #ddd; border-radius: 4px;" />', obj.image.url)
+        return mark_safe('<div id="preview-image" style="color: #999; font-style: italic;">No image uploaded</div>')
+    image_preview.short_description = 'Preview'
+    
+    class Media:
+        js = ('admin/js/block_image_preview.js',)
     
     def times_copied(self, obj):
         count = obj.copied_by.count()
@@ -191,7 +214,8 @@ class CartItemAdmin(admin.ModelAdmin):
     
     def over_limit(self, obj):
         user_cart_total = sum(item.get_total_cost() for item in obj.user.cart_items.all())
-        if user_cart_total > obj.user.cost_limit:
+        settings = Settings.get_settings()
+        if user_cart_total > settings.global_cost_limit:
             return "YES"
         return "No"
     over_limit.short_description = 'Over Limit?'

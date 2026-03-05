@@ -146,6 +146,26 @@
         min-height: 3rem;
     }
     
+    .block-content {
+        display: flex;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+    
+    .block-image {
+        flex-shrink: 0;
+        width: 100px;
+        height: 100px;
+        object-fit: cover;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+    }
+    
+    .block-text {
+        flex: 1;
+        min-width: 0;
+    }
+    
     .block-cost {
         color: #dc3545;
         font-size: 1.1rem;
@@ -153,6 +173,7 @@
         display: flex;
         align-items: center;
         gap: 0.5rem;
+        margin-top: auto;
     }
     
     .block-type-badge {
@@ -265,7 +286,7 @@
     <div class="cart-info">
         <span>Cart: <span id="cart-count">{{ cart_count }}</span> items</span>
         <span class="cart-total {% if cart_total > cost_limit %}over-limit{% endif %}" id="cart-total-display">
-            <span id="cart-total">{{ cart_total }}</span> / {{ cost_limit }}
+            <span id="cart-total">{{ cart_total|floatformat:2 }}</span> / {{ cost_limit|floatformat:2 }}
         </span>
     </div>
 </div>
@@ -287,14 +308,21 @@
     <div class="block-card">
         <h3 class="block-name">{{ block.name }}</h3>
         <div class="block-type-badge">{{ block.get_block_type_display }}</div>
-        <p class="block-description">
-            {% if block.voltage > 0 or block.current > 0 %}
-                {{ block.voltage }}V, {{ block.current }}A {% if block.block_type == 'battery' %}supply{% else %}consumption{% endif %}.
+        <div class="block-content">
+            {% if block.image %}
+            <img src="{{ block.image.url }}" alt="{{ block.name }}" class="block-image">
             {% endif %}
-            {{ block.description|default:"No description provided." }}
-        </p>
+            <div class="block-text">
+                <p class="block-description">
+                    {% if block.voltage > 0 or block.current > 0 %}
+                        {{ block.voltage }}V, {{ block.current }}A {% if block.block_type == 'battery' %}supply{% else %}consumption{% endif %}.
+                    {% endif %}
+                    {{ block.description|default:"No description provided." }}
+                </p>
+            </div>
+        </div>
         <div class="block-cost">
-            {{ block.cost }} zł
+            {{ block.cost|floatformat:2 }} zł
         </div>
         <div class="block-actions">
             <button class="btn btn-copy" onclick="copyBlock({{ block.id }}, '{{ block.name|escapejs }}')">
@@ -348,16 +376,25 @@ function renderBlocks(blocks) {
                 ? `${block.voltage}V, ${block.current}A ${block.block_type === 'battery' ? 'supply' : 'consumption'}.` 
                 : '';
             
+            const imageHtml = block.image_url 
+                ? `<img src="${block.image_url}" alt="${escapeHtml(block.name)}" class="block-image">` 
+                : '';
+            
             return `
                 <div class="block-card">
                     <h3 class="block-name">${escapeHtml(block.name)}</h3>
                     <div class="block-type-badge">${escapeHtml(block.block_type_display)}</div>
-                    <p class="block-description">
-                        ${voltageCurrentText}
-                        ${escapeHtml(block.description)}
-                    </p>
+                    <div class="block-content">
+                        ${imageHtml}
+                        <div class="block-text">
+                            <p class="block-description">
+                                ${voltageCurrentText}
+                                ${escapeHtml(block.description)}
+                            </p>
+                        </div>
+                    </div>
                     <div class="block-cost">
-                        ${block.cost} zł
+                        ${parseFloat(block.cost).toFixed(2)} zł
                     </div>
                     <div class="block-actions">
                         <button class="btn btn-copy" onclick="copyBlock(${block.id}, '${escapeHtml(block.name).replace(/'/g, "\\'")}')">
@@ -446,7 +483,7 @@ function showToast(message, type = 'success') {
 
 function updateCartDisplay(data) {
     document.getElementById('cart-count').textContent = data.cart_count;
-    document.getElementById('cart-total').textContent = data.cart_total;
+    document.getElementById('cart-total').textContent = parseFloat(data.cart_total).toFixed(2);
     
     const cartTotalDisplay = document.getElementById('cart-total-display');
     if (data.over_limit) {

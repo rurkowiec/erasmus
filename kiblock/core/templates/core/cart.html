@@ -301,7 +301,7 @@
     <h2>Your Cart</h2>
     <div class="cost-summary">
         <span class="cost-total {% if over_limit %}over-limit{% endif %}">
-            {{ cart_total }} / {{ cost_limit }} zł
+            {{ cart_total|floatformat:2 }} / {{ cost_limit|floatformat:2 }} zł
         </span>
     </div>
 </div>
@@ -326,10 +326,10 @@
             <button class="qty-btn" onclick="increaseQuantity({{ item.id }})">+</button>
         </div>
         <div class="item-cost">
-            {{ item.block.cost }} zł each
+            {{ item.block.cost|floatformat:2 }} zł each
         </div>
         <div class="item-total" id="total-{{ item.id }}">
-            Total: {{ item.get_total_cost }} zł
+            Total: {{ item.get_total_cost|floatformat:2 }} zł
         </div>
         <button class="btn-remove" onclick="removeItem({{ item.id }}, '{{ item.block.name }}')" title="Remove item">
             <i class="fas fa-trash"></i>
@@ -341,7 +341,7 @@
 {% if over_limit %}
 <div class="limit-warning">
     <i class="fas fa-exclamation-triangle"></i>
-    Warning: Your cart total exceeds your cost limit of {{ cost_limit }} zł!
+    Warning: Your cart total exceeds your cost limit of {{ cost_limit|floatformat:2 }} zł!
 </div>
 {% endif %}
 
@@ -427,14 +427,14 @@
     
     function updateCartDisplay(cartTotal, overLimit) {
         const costTotalElem = document.querySelector('.cost-total');
-        costTotalElem.textContent = `${cartTotal} / {{ cost_limit }} zł`;
+        costTotalElem.textContent = `${parseFloat(cartTotal).toFixed(2)} / {{ cost_limit|floatformat:2 }} zł`;
         
         if (overLimit) {
             costTotalElem.classList.add('over-limit');
             if (!document.querySelector('.limit-warning')) {
                 const warning = document.createElement('div');
                 warning.className = 'limit-warning';
-                warning.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Warning: Your cart total exceeds your cost limit of {{ cost_limit }} zł!';
+                warning.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Warning: Your cart total exceeds your cost limit of {{ cost_limit|floatformat:2 }} zł!';
                 document.querySelector('.cart-items').after(warning);
             }
         } else {
@@ -458,7 +458,7 @@
             
             if (data.success) {
                 document.getElementById(`qty-${itemId}`).textContent = data.quantity;
-                document.getElementById(`total-${itemId}`).textContent = `Total: ${data.item_total} zł`;
+                document.getElementById(`total-${itemId}`).textContent = `Total: ${parseFloat(data.item_total).toFixed(2)} zł`;
                 updateCartDisplay(data.cart_total, data.over_limit);
                 
                 // Enable decrease button if quantity > 1
@@ -488,7 +488,7 @@
             
             if (data.success) {
                 document.getElementById(`qty-${itemId}`).textContent = data.quantity;
-                document.getElementById(`total-${itemId}`).textContent = `Total: ${data.item_total} zł`;
+                document.getElementById(`total-${itemId}`).textContent = `Total: ${parseFloat(data.item_total).toFixed(2)} zł`;
                 updateCartDisplay(data.cart_total, data.over_limit);
                 
                 // Disable decrease button if quantity is 1

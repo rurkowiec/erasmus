@@ -234,7 +234,7 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-    {% if user %}
+    {% if user and request.resolver_match.url_name != 'login' %}
     <nav class="navbar">
         <h1><a href="{% url 'block_list' %}"><img src="{% static 'core/images/logo.svg' %}" alt="Logo"></a></h1>
         <div class="user-info">
@@ -258,7 +258,7 @@
         {% block content %}{% endblock %}
     </div>
     
-    {% if user %}
+    {% if user and request.resolver_match.url_name != 'login' %}
     <!-- Upload Project Modal -->
     <div class="modal" id="upload-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; justify-content: center; align-items: center;">
         <div class="modal-content" style="background: white; padding: 2rem; border-radius: 8px; max-width: 500px; width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
@@ -291,10 +291,10 @@
     {% endif %}
 
     {% block footer %}
-    {% if user %}
+    {% if user and request.resolver_match.url_name != 'login' %}
     <footer style="text-align: center; padding: 1.5rem; color: #666; font-size: 0.85rem; border-top: 1px solid #e0e0e0; margin-top: auto; background: #fff;">
         <p>KiBlock - KiCad Block Management System</p>
-        <p style="margin-top: 0.5rem;">Logged in as <strong style="color: #333;">{{ user }}</strong> | Cost Limit: <strong style="color: #dc3545;">{{ user.cost_limit }} zł</strong></p>
+        <p style="margin-top: 0.5rem;">Logged in as <strong style="color: #333;">{{ user }}</strong> | Cost Limit: <strong style="color: #dc3545;">{{ cost_limit|floatformat:2 }} zł</strong></p>
     </footer>
     {% endif %}
     {% endblock %}

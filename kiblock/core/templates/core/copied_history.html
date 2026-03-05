@@ -179,7 +179,7 @@
             </p>
         </div>
         <div class="item-cost">
-            {{ copied.block.cost }} zł
+            {{ copied.block.cost|floatformat:2 }} zł
         </div>
         <button class="btn-add-cart" onclick="addToCartFromHistory({{ copied.block.id }}, '{{ copied.block.name|escapejs }}')">
             <i class="fas fa-cart-plus"></i>
