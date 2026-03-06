@@ -14,14 +14,13 @@ def global_settings(request):
     except Exception:
         context['cost_limit'] = 100.0  # Fallback default
     
-    # Add user object if logged in
+    # Add user object if logged in (for non-admin views)
+    # Don't override if user is not found - let Django's auth context processor handle it
     user_id = request.session.get('user_id')
     if user_id:
         try:
             context['user'] = User.objects.get(id=user_id)
         except User.DoesNotExist:
-            context['user'] = None
-    else:
-        context['user'] = None
+            pass  # Don't add user to context, let Django's auth handle it
     
     return context
