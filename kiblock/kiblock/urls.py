@@ -39,6 +39,8 @@ urlpatterns = [
     path('', lambda request: redirect('login'), name='home'),
 ]
 
+# Serve media files (in production, ideally use nginx or a CDN)
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.BASE_DIR / 'core' / 'static')
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
