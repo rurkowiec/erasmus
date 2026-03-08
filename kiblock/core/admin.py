@@ -108,7 +108,7 @@ class SettingsAdmin(admin.ModelAdmin):
 
 @admin.register(Block)
 class BlockAdmin(admin.ModelAdmin):
-    list_display = ['name', 'block_type', 'voltage', 'current', 'cost', 'has_image', 'times_copied', 'times_in_cart', 'created_at']
+    list_display = ['name', 'block_type', 'voltage_display', 'current', 'cost', 'has_image', 'times_copied', 'times_in_cart', 'created_at']
     search_fields = ['name', 'description', 'kicad_code']
     list_filter = ['created_at', 'cost', 'block_type']
     ordering = ['name']
@@ -123,8 +123,8 @@ class BlockAdmin(admin.ModelAdmin):
             'description': 'Optional block image (will be displayed as a square on the site)'
         }),
         ('Electrical Properties', {
-            'fields': ('voltage', 'current'),
-            'description': 'For components: voltage = operating voltage, current = consumption. For batteries: voltage = output, current = max supply.'
+            'fields': ('voltage_min', 'voltage_max', 'current'),
+            'description': 'For components: voltage range = operating voltage range, current = consumption. For batteries: voltage_min = voltage_max = output voltage, current = max supply.'
         }),
         ('KiCad Code', {
             'fields': ('kicad_code',),
@@ -135,6 +135,10 @@ class BlockAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+    
+    def voltage_display(self, obj):
+        return obj.get_voltage_display()
+    voltage_display.short_description = 'Voltage'
     
     def has_image(self, obj):
         return bool(obj.image)

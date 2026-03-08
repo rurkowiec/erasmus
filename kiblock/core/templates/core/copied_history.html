@@ -172,8 +172,8 @@
             <h3>{{ copied.block.name }}</h3>
             <div class="history-type-badge">{{ copied.block.get_block_type_display }}</div>
             <p>
-                {% if copied.block.voltage > 0 or copied.block.current > 0 %}
-                    {{ copied.block.voltage }}V, {{ copied.block.current }}A {% if copied.block.block_type == 'battery' %}supply{% else %}consumption{% endif %}.
+                {% if copied.block.voltage_min > 0 or copied.block.current > 0 %}
+                    {{ copied.block.get_voltage_display }}, {{ copied.block.current }}A {% if copied.block.block_type == 'battery' %}supply{% else %}consumption{% endif %}.
                 {% endif %}
                 {{ copied.block.description|default:"No description" }}
             </p>

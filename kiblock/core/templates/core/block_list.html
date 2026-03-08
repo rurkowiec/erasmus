@@ -314,8 +314,8 @@
             {% endif %}
             <div class="block-text">
                 <p class="block-description">
-                    {% if block.voltage > 0 or block.current > 0 %}
-                        {{ block.voltage }}V, {{ block.current }}A {% if block.block_type == 'battery' %}supply{% else %}consumption{% endif %}.
+                    {% if block.voltage_min > 0 or block.current > 0 %}
+                        {{ block.get_voltage_display }}, {{ block.current }}A {% if block.block_type == 'battery' %}supply{% else %}consumption{% endif %}.
                     {% endif %}
                     {{ block.description|default:"No description provided." }}
                 </p>
@@ -372,8 +372,8 @@ function renderBlocks(blocks) {
         emptyState.style.display = 'none';
         blocksGrid.style.display = 'grid';
         blocksGrid.innerHTML = blocks.map(block => {
-            const voltageCurrentText = (block.voltage > 0 || block.current > 0) 
-                ? `${block.voltage}V, ${block.current}A ${block.block_type === 'battery' ? 'supply' : 'consumption'}.` 
+            const voltageCurrentText = (block.voltage_min > 0 || block.current > 0) 
+                ? `${block.voltage_display}, ${block.current}A ${block.block_type === 'battery' ? 'supply' : 'consumption'}.` 
                 : '';
             
             const imageHtml = block.image_url 

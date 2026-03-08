@@ -53,7 +53,8 @@ class Block(models.Model):
     kicad_code = models.TextField(help_text="Full KiCad snippet code")
     cost = models.FloatField()
     block_type = models.CharField(max_length=20, choices=BLOCK_TYPE_CHOICES, default='component')
-    voltage = models.FloatField(default=0.0, help_text="Operating voltage in V (for components) or output voltage (for batteries)")
+    voltage_min = models.FloatField(default=0.0, help_text="Minimum voltage in V (for components) or output voltage (for batteries)")
+    voltage_max = models.FloatField(default=0.0, help_text="Maximum voltage in V (for components) or same as min for fixed voltage")
     current = models.FloatField(default=0.0, help_text="Current consumption in A (for components) or max supply current (for batteries)")
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -66,6 +67,23 @@ class Block(models.Model):
     def is_battery(self):
         """Check if this block is a battery/power source"""
         return self.block_type == 'battery'
+    
+    def get_voltage_display(self):
+        """Get a user-friendly voltage display string"""
+        if self.voltage_min == 0 and self.voltage_max == 0:
+            return "N/A"
+        elif self.voltage_min == self.voltage_max:
+            return f"{self.voltage_min}V"
+        else:
+            return f"{self.voltage_min}-{self.voltage_max}V"
+    
+    def accepts_voltage(self, voltage):
+        """Check if this component can work with the given voltage"""
+        if self.voltage_min == 0 and self.voltage_max == 0:
+            return True  # No voltage requirement
+        if self.voltage_max == 0:
+            return voltage >= self.voltage_min  # Only min specified
+        return self.voltage_min <= voltage <= self.voltage_max
 
 
 class CopiedBlock(models.Model):

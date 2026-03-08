@@ -175,7 +175,9 @@ def search_blocks(request):
         'cost': float(block.cost),
         'block_type': block.block_type,
         'block_type_display': block.get_block_type_display(),
-        'voltage': float(block.voltage) if block.voltage else 0,
+        'voltage_min': float(block.voltage_min) if block.voltage_min else 0,
+        'voltage_max': float(block.voltage_max) if block.voltage_max else 0,
+        'voltage_display': block.get_voltage_display(),
         'current': float(block.current) if block.current else 0,
         'image_url': block.image.url if block.image else None,
     } for block in blocks]
@@ -265,21 +267,23 @@ def cart_view(request):
     total_current_consumption = 0.0
     total_current_supply = 0.0
     battery_voltage = None
-    component_voltage = None
+    component_voltage_min = None
+    component_voltage_max = None
     has_components = False
     has_battery = False
     has_regulator = False
     warnings = []
+    incompatible_components = []  # List of components that don't work with battery voltage
     
     for item in cart_items:
         if item.block.is_battery():
             # This is a battery - adds to supply
             total_current_supply += item.block.current * item.quantity
             has_battery = True
-            if item.block.voltage > 0:
+            if item.block.voltage_min > 0:
                 if battery_voltage is None:
-                    battery_voltage = item.block.voltage
-                elif battery_voltage != item.block.voltage:
+                    battery_voltage = item.block.voltage_min  # Batteries should have min=max
+                elif battery_voltage != item.block.voltage_min:
                     warnings.append("Warning: You have batteries with different voltages in your cart!")
         else:
             # Check if this is a voltage regulator
@@ -288,13 +292,22 @@ def cart_view(request):
             
             # This is a component - adds to consumption
             total_current_consumption += item.block.current * item.quantity
-            if item.block.current > 0 or item.block.voltage > 0:
+            if item.block.current > 0 or item.block.voltage_min > 0:
                 has_components = True
-            if item.block.voltage > 0:
-                if component_voltage is None:
-                    component_voltage = item.block.voltage
-                elif component_voltage != item.block.voltage:
-                    warnings.append("Warning: You have components with different voltage requirements!")
+            
+            # Track component voltage requirements
+            if item.block.voltage_min > 0:
+                if component_voltage_min is None:
+                    component_voltage_min = item.block.voltage_min
+                    component_voltage_max = item.block.voltage_max if item.block.voltage_max > 0 else item.block.voltage_min
+                else:
+                    # Find the intersection of voltage ranges
+                    component_voltage_min = max(component_voltage_min, item.block.voltage_min)
+                    new_max = item.block.voltage_max if item.block.voltage_max > 0 else item.block.voltage_min
+                    if component_voltage_max > 0:
+                        component_voltage_max = min(component_voltage_max, new_max)
+                    else:
+                        component_voltage_max = new_max
     
     # Check current supply
     if has_components and total_current_consumption > 0:
@@ -303,20 +316,34 @@ def cart_view(request):
         elif total_current_supply < total_current_consumption:
             warnings.append(f"Your cart requires {total_current_consumption:.2f}A but batteries can only supply {total_current_supply:.2f}A!")
     
-    # Check voltage compatibility
-    if has_components and component_voltage and has_battery and battery_voltage:
-        if has_regulator:
-            # With a regulator, we're more lenient
-            if battery_voltage < component_voltage:
-                warnings.append(f"Battery voltage ({battery_voltage}V) is lower than component requirements ({component_voltage}V)! Voltage regulator cannot boost voltage.")
+    # Check voltage compatibility with ranges
+    if has_components and component_voltage_min and has_battery and battery_voltage:
+        # Check if any components can't work with the battery voltage
+        for item in cart_items:
+            if not item.block.is_battery() and not item.block.accepts_voltage(battery_voltage):
+                incompatible_components.append(item.block.name)
+        
+        if incompatible_components:
+            comp_list = ", ".join(incompatible_components)
+            if has_regulator:
+                warnings.append(f"Battery voltage ({battery_voltage}V) is outside the range for: {comp_list}. Check if your regulator can handle this.")
+            else:
+                warnings.append(f"Battery voltage ({battery_voltage}V) is outside the operating range for: {comp_list}!")
+        elif has_regulator:
+            # With a regulator and compatible ranges
+            if battery_voltage < component_voltage_min:
+                warnings.append(f"Battery voltage ({battery_voltage}V) is lower than component requirements ({component_voltage_min}V)! Voltage regulator cannot boost voltage.")
         else:
-            # Without a regulator, voltages must match closely
-            if battery_voltage < component_voltage:
-                warnings.append(f"Battery voltage ({battery_voltage}V) is lower than component requirements ({component_voltage}V)! Add a voltage regulator or use compatible voltage.")
-            elif battery_voltage > component_voltage * 1.2:  # Allow 20% tolerance
-                warnings.append(f"Battery voltage ({battery_voltage}V) is significantly higher than component requirements ({component_voltage}V)! Add a voltage regulator to step down voltage.")
-    elif has_components and component_voltage and not has_battery:
-        warnings.append(f"Components require {component_voltage}V but there's no battery in the cart!")
+            # Without a regulator, check if battery voltage is in acceptable range
+            if battery_voltage < component_voltage_min:
+                warnings.append(f"Battery voltage ({battery_voltage}V) is lower than component requirements ({component_voltage_min}-{component_voltage_max}V)! Add a voltage regulator or use compatible voltage.")
+            elif component_voltage_max > 0 and battery_voltage > component_voltage_max * 1.2:  # Allow 20% tolerance above max
+                warnings.append(f"Battery voltage ({battery_voltage}V) is significantly higher than component maximum ({component_voltage_max}V)! Add a voltage regulator to step down voltage.")
+    elif has_components and component_voltage_min and not has_battery:
+        if component_voltage_max > 0 and component_voltage_max != component_voltage_min:
+            warnings.append(f"Components require {component_voltage_min}-{component_voltage_max}V but there's no battery in the cart!")
+        else:
+            warnings.append(f"Components require {component_voltage_min}V but there's no battery in the cart!")
     
     settings = Settings.get_settings()
     context = {
@@ -330,7 +357,8 @@ def cart_view(request):
         'total_current_consumption': total_current_consumption,
         'total_current_supply': total_current_supply,
         'battery_voltage': battery_voltage,
-        'component_voltage': component_voltage,
+        'component_voltage_min': component_voltage_min,
+        'component_voltage_max': component_voltage_max,
         'has_regulator': has_regulator,
     }
     return render(request, 'core/cart.html', context)
